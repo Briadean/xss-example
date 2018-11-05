@@ -1,4 +1,5 @@
 import os
+import random
 import base64
 
 from flask import Flask, request
@@ -9,10 +10,13 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = str(random.randint(10000000, 99999999))
 
     if request.method == 'POST':
-        m = Message(content=request.form['content'])
-        m.save()
+        if request.form.get('csrf_token', None) == session['csrf_token']:
+            m = Message(content=request.form['content'])
+            m.save()
 
     body = """
 <html>
@@ -23,9 +27,8 @@ def home():
     <textarea name="content"></textarea>
     <input type="submit" value="Submit">
 </form>
-
 <h2>Wisdom From Your Fellow Classmates</h2>
-"""
+""".format(session['csrf_token'])
     
     for m in Message.select():
         body += """
